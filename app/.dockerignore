@@ -1,0 +1,27 @@
+# Exclude files that must NOT be in the production runtime image.
+# This keeps the image small and free of test/dev artifacts.
+
+# Test files
+test_main.py
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Development tooling
+requirements-dev.txt
+.env
+.env.*
+
+# Editor and OS artifacts
+.DS_Store
+Thumbs.db
+*.swp
+
+# Git history
+.git/
+.gitignore

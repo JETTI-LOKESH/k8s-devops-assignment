@@ -1,0 +1,18 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: hello-app-pdb
+  namespace: hello-app
+  labels:
+    app: hello-app
+    app.kubernetes.io/part-of: hello-app
+spec:
+  # minAvailable: 1 ensures at least one hello-app pod is always running
+  # during voluntary disruptions (node drain, rolling upgrade).
+  #
+  # Local demo: with replicas=1 this prevents voluntary eviction entirely.
+  # Production: set replicas >= 2 and this enables zero-downtime node maintenance.
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: hello-app

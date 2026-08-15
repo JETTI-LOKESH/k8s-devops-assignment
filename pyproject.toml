@@ -1,0 +1,16 @@
+[tool.pytest.ini_options]
+# Run tests from the app directory; no need to cd in CI
+testpaths = ["app"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/test_*.py"]
+
+[tool.coverage.report]
+show_missing = true
+# Fail if overall coverage drops below 80%
+fail_under = 80

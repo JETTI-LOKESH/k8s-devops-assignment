@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-app
+  namespace: hello-app
+  labels:
+    app: hello-app
+    tier: web
+    app.kubernetes.io/part-of: hello-app
+spec:
+  selector:
+    app: hello-app
+  # NodePort exposes the service on every node at port 30080.
+  # Combined with the Kind extra_port_mappings in Terraform, this makes
+  # the app accessible at http://localhost:8080 on the host machine.
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
+      nodePort: 30080

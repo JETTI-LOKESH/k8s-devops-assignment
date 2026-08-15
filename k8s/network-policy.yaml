@@ -1,0 +1,57 @@
+---
+# NetworkPolicy — restrict pod-to-pod traffic in the hello-app namespace.
+#
+# Pattern: default-deny all ingress, then allow only what is explicitly needed.
+# This follows the principle of least privilege at the network layer.
+
+# 1. Default: deny all ingress to every pod in the namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: hello-app
+spec:
+  podSelector: {}         # Applies to ALL pods in the namespace
+  policyTypes:
+    - Ingress
+
+---
+# 2. Allow external traffic (from the NodePort service) into hello-app on port 5000.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-app
+  namespace: hello-app
+spec:
+  podSelector:
+    matchLabels:
+      app: hello-app
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 5000
+
+---
+# 3. Allow hello-app pods to reach postgres on port 5432 — and ONLY hello-app.
+#    No other pod in the namespace can connect to the database.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-app-to-postgres
+  namespace: hello-app
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: hello-app
+      ports:
+        - protocol: TCP
+          port: 5432

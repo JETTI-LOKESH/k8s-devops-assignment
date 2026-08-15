@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-app
+  namespace: hello-app
+  labels:
+    app: hello-app
+    tier: web
+    app.kubernetes.io/part-of: hello-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-app
+  template:
+    metadata:
+      labels:
+        app: hello-app
+        tier: web
+    spec:
+      # Drop all privileges at the pod level (non-root enforcement)
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000    # Matches the appuser UID created in the Dockerfile
+        runAsGroup: 1000
+      containers:
+        - name: hello-app
+          image: hello-app:latest
+          # Never pull from registry in local Kind; image is loaded via kind load
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5000
+          # Container-level security hardening
+          securityContext:
+            allowPrivilegeEscalation: false   # Prevent sudo / setuid escalation
+            capabilities:
+              drop:
+                - ALL                         # Drop every Linux capability by default
+          # Right-sized for a lightweight Flask/gunicorn service on a local node
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          # Inject all non-sensitive config from ConfigMap
+          envFrom:
+            - configMapRef:
+                name: app-config
+          # Inject sensitive credentials from Secret individually
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: DB_PASSWORD
+          # Startup probe: gives gunicorn up to 60s to initialise before
+          # liveness kicks in. Prevents false restarts on slow cold starts.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 12
+          # Liveness: kill and restart the container if /health stops responding
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            failureThreshold: 3
+          # Readiness: hold traffic until the app is truly ready to serve
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
